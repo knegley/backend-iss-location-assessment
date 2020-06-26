@@ -8,28 +8,50 @@ import time
 
 
 def get_astonauts() -> object:
+
     url = "http://api.open-notify.org/astros.json"
+
     response = requests.get(url).json()
-    # print(response["message"])
-    # print(response["people"])
+
     return({"people": response["people"], "number": response["number"]})
 
 
 def get_coordinates() -> object:
+
     url = "http://api.open-notify.org/iss-now.json"
+
     response = requests.get(url).json()
+
     timestamp = {"timestamp": time.ctime(response["timestamp"])}
 
     return {**(response["iss_position"]), **timestamp}
+
+
+def iterator_factory(key: str, /) -> iter:
+
+    def iterator_(func: callable, /):
+
+        def wrapper(arg: str, /):
+
+            response = get_astonauts()
+            value = response[key]
+
+            if isinstance(value, int):
+                yield value
+
+            for item in value:
+                yield f'{arg}: {item[arg]}'
+        return wrapper
+    return iterator_
 
 
 def screen() -> None:
     indy_lat, indy_long = 40.273502, -86.126976
     window = turtle.Screen()
     coords = get_coordinates()
-    # print(get_coordinates())
+    next_time = is_over_indy()
+
     (lat, lon) = (float(coords["latitude"]), float(coords["longitude"]))
-    # print(lat, lon)
 
     turtle.title("Kyle's Assessment")
     window.bgpic("map.gif")
@@ -38,14 +60,12 @@ def screen() -> None:
     t = turtle.Turtle()
     t.color("purple")
     t.speed(1)
-    # t.pendown()
-    # t.stamp()
-    # t.goto(180, 90)
-    # t.goto(46.79844, 62.1764)
-    # print(f"{lat=}")
-    # print(f"{lon=}")
     t.penup()
     t.setpos(indy_long, indy_lat)
+    t.setpos(indy_long+10, indy_lat+10)
+    style = ("Ariel", 10)
+    t.write(arg=next(next_time), font=style)
+
     t.pendown()
     t.shape("turtle")
     t.shapesize(.5, .5, .5)
@@ -54,27 +74,43 @@ def screen() -> None:
     window.addshape("iss.gif")
     t.shape("iss.gif")
     t.setpos(lon, lat)
-    # print(type(lat))
-    # print(type(lon))
-    # t.penup()
+
     window.mainloop()
 
 
-def is_over_indy() -> list:
+def is_over_indy() -> iter:
 
     indy_lat, indy_long = 40.273502, -86.126976
     url = "http://api.open-notify.org/iss-pass.json"
     params = {"lat": str(indy_lat), "lon": str(indy_long)}
-    # print(params)
+
     response = requests.get(url, params=params).json()["response"]
-    output = [time.ctime(item["risetime"]) for item in response]
-    return f"Times ISS will pass Indy:\n\t {output}"
+    return (time.ctime(item["risetime"]) for item in response)
 
 
-def main():
-    print(f"Astronauts: {get_astonauts()}\n")
-    print(f"Iss Location: {get_coordinates()}\n")
-    print(is_over_indy())
+def unpack_coords(**kwargs) -> iter:
+    return ((f"{kwarg} = {value}" for kwarg, value in kwargs.items()))
+
+
+def main() -> None:
+    astronauts = (astronaut for astronaut in iterator_factory(
+        "people")(lambda person: person)("name"))
+
+    number = (number for number in iterator_factory(
+        "number")(lambda number: number)("number"))
+
+    location = (location for location in iterator_factory(
+        "people")(lambda name: name)("craft"))
+    print("")
+    print(f"{next(location)}")
+    print("")
+    print(f"number_in_space_station = {next(number)}")
+    print("")
+    print("Astronauts", *astronauts, sep="\n\t")
+    print("")
+    print("Coordinates", *unpack_coords(**get_coordinates()), sep="\n\t",)
+    print("")
+    print("Times ISS will pass Indy:", *is_over_indy(), sep="\n\t")
     screen()
 
 
