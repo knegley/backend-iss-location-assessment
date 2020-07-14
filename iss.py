@@ -46,7 +46,7 @@ def iterator_factory(key: str, /) -> iter:
 
 
 def screen() -> None:
-    indy_lat, indy_long = 40.273502, -86.126976
+    indy_lat, indy_long = 39.7684, -86.1581
     window = turtle.Screen()
     coords = get_coordinates()
     next_time = is_over_indy()
@@ -62,15 +62,13 @@ def screen() -> None:
     t.speed(1)
     t.penup()
     t.setpos(indy_long, indy_lat)
-    t.setpos(indy_long+10, indy_lat+10)
+    t.shape("circle")
+    t.shapesize(.07, .07, .07)
+    t.stamp()
+
     style = ("Ariel", 10)
     t.write(arg=next(next_time), font=style)
 
-    t.pendown()
-    t.shape("turtle")
-    t.shapesize(.5, .5, .5)
-    t.stamp()
-    t.penup()
     window.addshape("iss.gif")
     t.shape("iss.gif")
     t.setpos(lon, lat)
